@@ -28,6 +28,17 @@ function newBoard() {
   return [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY];
 }
 
+function newScores() {
+  return { winsX: 0, winsO: 0, draws: 0 };
+}
+
+function incrementScores(room, outcome) {
+  if (!room.scores) room.scores = newScores();
+  if (outcome === "X") room.scores.winsX += 1;
+  else if (outcome === "O") room.scores.winsO += 1;
+  else if (outcome === "draw") room.scores.draws += 1;
+}
+
 function checkWinner(board) {
   const lines = [
     [0, 1, 2],
@@ -50,7 +61,7 @@ function checkWinner(board) {
   return null;
 }
 
-/** @type {Map<string, { board: (string|null)[], turn: 'X'|'O', status: 'waiting'|'playing'|'finished', players: { X: string|null, O: string|null }, winner?: string|null, line?: number[]|null }>} */
+/** @type {Map<string, { code: string, board: (string|null)[], turn: 'X'|'O', status: 'waiting'|'playing'|'finished', players: { X: string|null, O: string|null }, scores: { winsX: number, winsO: number, draws: number }, winner?: string|null, line?: number[]|null }>} */
 const rooms = new Map();
 
 /** socket.id -> roomCode */
@@ -67,6 +78,7 @@ function roomStateForClient(room, socketId) {
     winner: room.winner ?? null,
     winningLine: room.line ?? null,
     playersConnected: (room.players.X ? 1 : 0) + (room.players.O ? 1 : 0),
+    scores: room.scores ?? newScores(),
   };
 }
 
@@ -101,6 +113,7 @@ function leaveRoom(socketId) {
     const remaining = room.players.X || room.players.O;
     room.winner = remaining === room.players.X ? "X" : "O";
     room.line = null;
+    incrementScores(room, room.winner);
     emitRoom(roomCode);
   }
 
@@ -122,6 +135,7 @@ io.on("connection", (socket) => {
       turn: "X",
       status: "waiting",
       players: { X: socket.id, O: null },
+      scores: newScores(),
     };
     rooms.set(code, room);
     socketRoom.set(socket.id, code);
@@ -181,9 +195,20 @@ io.on("connection", (socket) => {
       room.status = "finished";
       room.winner = result.winner === "draw" ? "draw" : result.winner;
       room.line = result.line;
+      incrementScores(room, room.winner);
     } else {
       room.turn = room.turn === "X" ? "O" : "X";
     }
+    emitRoom(roomCode);
+  });
+
+  socket.on("resetScores", () => {
+    const roomCode = socketRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room) return;
+    if (room.players.X !== socket.id && room.players.O !== socket.id) return;
+    room.scores = newScores();
     emitRoom(roomCode);
   });
 

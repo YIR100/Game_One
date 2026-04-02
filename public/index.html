@@ -50,10 +50,29 @@
           <p id="status-line" class="status"></p>
         </div>
 
+        <div id="score-strip" class="score-strip" aria-label="Match scores">
+          <div class="score-cell" id="score-cell-you">
+            <span class="score-val" id="score-you">0</span>
+            <span class="score-lbl" id="score-you-lbl">You (X)</span>
+          </div>
+          <div class="score-cell score-draws-cell">
+            <span class="score-val" id="score-draws">0</span>
+            <span class="score-lbl">Draws</span>
+          </div>
+          <div class="score-cell" id="score-cell-them">
+            <span class="score-val" id="score-them">0</span>
+            <span class="score-lbl" id="score-them-lbl">Them (O)</span>
+          </div>
+        </div>
+        <div class="score-actions">
+          <button type="button" id="btn-reset-scores" class="btn ghost small">Reset scores</button>
+        </div>
+
         <div id="board" class="board" role="grid" aria-label="Tic tac toe board"></div>
 
         <div id="overlay-result" class="overlay hidden" role="status">
           <p id="result-text" class="result-text"></p>
+          <p id="result-series" class="result-series" hidden></p>
           <button type="button" id="btn-again" class="btn primary">Play again</button>
           <button type="button" id="btn-leave" class="btn ghost">Leave room</button>
         </div>

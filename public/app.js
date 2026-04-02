@@ -15,6 +15,15 @@ const btnAgain = document.getElementById("btn-again");
 const btnLeave = document.getElementById("btn-leave");
 const btnCopy = document.getElementById("btn-copy");
 const hintWait = document.getElementById("hint-wait");
+const scoreYou = document.getElementById("score-you");
+const scoreThem = document.getElementById("score-them");
+const scoreDraws = document.getElementById("score-draws");
+const scoreYouLbl = document.getElementById("score-you-lbl");
+const scoreThemLbl = document.getElementById("score-them-lbl");
+const btnResetScores = document.getElementById("btn-reset-scores");
+const resultSeries = document.getElementById("result-series");
+const scoreCellYou = document.getElementById("score-cell-you");
+const scoreCellThem = document.getElementById("score-cell-them");
 
 const cells = [];
 
@@ -44,10 +53,35 @@ function buildBoard() {
 
 buildBoard();
 
+function applyScores(state) {
+  const scores = state.scores || { winsX: 0, winsO: 0, draws: 0 };
+  const sym = state.yourSymbol;
+  if (!sym) {
+    scoreYou.textContent = "0";
+    scoreThem.textContent = "0";
+    scoreDraws.textContent = "0";
+    scoreCellYou.classList.remove("mark-x-side", "mark-o-side");
+    scoreCellThem.classList.remove("mark-x-side", "mark-o-side");
+    return;
+  }
+  const yourWins = sym === "X" ? scores.winsX : scores.winsO;
+  const theirWins = sym === "X" ? scores.winsO : scores.winsX;
+  scoreYou.textContent = String(yourWins);
+  scoreThem.textContent = String(theirWins);
+  scoreDraws.textContent = String(scores.draws);
+  scoreYouLbl.textContent = sym === "X" ? "You (X)" : "You (O)";
+  scoreThemLbl.textContent = sym === "X" ? "Them (O)" : "Them (X)";
+  scoreCellYou.classList.remove("mark-x-side", "mark-o-side");
+  scoreCellThem.classList.remove("mark-x-side", "mark-o-side");
+  scoreCellYou.classList.add(sym === "X" ? "mark-x-side" : "mark-o-side");
+  scoreCellThem.classList.add(sym === "X" ? "mark-o-side" : "mark-x-side");
+}
+
 function applyState(state) {
   if (!state || !state.roomCode) return;
 
   roomCodeDisplay.textContent = state.roomCode;
+  applyScores(state);
   hintWait.classList.toggle("hidden", state.status !== "waiting" || state.playersConnected >= 2);
 
   const sym = state.yourSymbol;
@@ -84,8 +118,21 @@ function applyState(state) {
     } else {
       resultText.textContent = "Opponent wins.";
     }
+    if (sym && state.scores) {
+      const y = sym === "X" ? state.scores.winsX : state.scores.winsO;
+      const t = sym === "X" ? state.scores.winsO : state.scores.winsX;
+      const d = state.scores.draws;
+      let line = `Series: ${y}–${t}`;
+      if (d > 0) line += ` · ${d} draw${d === 1 ? "" : "s"}`;
+      resultSeries.textContent = line;
+      resultSeries.hidden = false;
+    } else {
+      resultSeries.textContent = "";
+      resultSeries.hidden = true;
+    }
   } else {
     overlayResult.classList.add("hidden");
+    resultSeries.hidden = true;
   }
 
   if (!sym) {
@@ -190,6 +237,12 @@ boardEl.addEventListener("click", (e) => {
 
 btnAgain.addEventListener("click", () => {
   socket.emit("playAgain");
+});
+
+btnResetScores.addEventListener("click", () => {
+  if (window.confirm("Reset wins and draws for this room for both players?")) {
+    socket.emit("resetScores");
+  }
 });
 
 btnLeave.addEventListener("click", () => {
