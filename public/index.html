@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tic Tac Toe — Live</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <main class="shell">
+      <header class="hero">
+        <h1>Tic Tac Toe</h1>
+        <p class="tagline">Play live with a friend — share a room code.</p>
+      </header>
+
+      <section id="panel-lobby" class="panel">
+        <div class="actions">
+          <button type="button" id="btn-create" class="btn primary">Create room</button>
+          <div class="join-row">
+            <input
+              id="input-code"
+              type="text"
+              maxlength="6"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              placeholder="ROOM"
+              aria-label="Room code"
+            />
+            <button type="button" id="btn-join" class="btn">Join</button>
+          </div>
+        </div>
+        <p id="lobby-error" class="error" hidden></p>
+      </section>
+
+      <section id="panel-game" class="panel hidden">
+        <div class="room-bar">
+          <div class="room-info">
+            <span class="label">Room</span>
+            <span id="room-code-display" class="room-code"></span>
+            <button type="button" id="btn-copy" class="btn ghost small">Copy link</button>
+          </div>
+          <p id="status-line" class="status"></p>
+        </div>
+
+        <div id="board" class="board" role="grid" aria-label="Tic tac toe board"></div>
+
+        <div id="overlay-result" class="overlay hidden" role="status">
+          <p id="result-text" class="result-text"></p>
+          <button type="button" id="btn-again" class="btn primary">Play again</button>
+          <button type="button" id="btn-leave" class="btn ghost">Leave room</button>
+        </div>
+
+        <p id="hint-wait" class="hint hidden">Waiting for opponent to join…</p>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
