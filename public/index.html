@@ -36,8 +36,10 @@
             />
             <button type="button" id="btn-join" class="btn">Join</button>
           </div>
+          <button type="button" id="btn-spectate" class="btn ghost">Spectate (watch only)</button>
         </div>
         <p id="lobby-error" class="error" hidden></p>
+        <p id="rejoin-hint" class="hint subtle" hidden></p>
       </section>
 
       <section id="panel-game" class="panel hidden">
@@ -48,6 +50,7 @@
             <button type="button" id="btn-copy" class="btn ghost small">Copy link</button>
           </div>
           <p id="status-line" class="status"></p>
+          <p id="timer-line" class="timer-line hidden" aria-live="polite"></p>
         </div>
 
         <div id="score-strip" class="score-strip" aria-label="Match scores">
@@ -64,11 +67,16 @@
             <span class="score-lbl" id="score-them-lbl">Them (O)</span>
           </div>
         </div>
-        <div class="score-actions">
+        <div class="score-actions" id="score-actions-row">
           <button type="button" id="btn-reset-scores" class="btn ghost small">Reset scores</button>
         </div>
 
         <div id="board" class="board" role="grid" aria-label="Tic tac toe board"></div>
+
+        <details id="history-panel" class="history-panel">
+          <summary>Session history</summary>
+          <ul id="history-list" class="history-list"></ul>
+        </details>
 
         <div id="overlay-result" class="overlay hidden" role="status">
           <p id="result-text" class="result-text"></p>
@@ -80,6 +88,20 @@
         <p id="hint-wait" class="hint hidden">Waiting for opponent to join…</p>
       </section>
     </main>
+
+    <aside id="chat-dock" class="chat-dock hidden" aria-label="Room chat">
+      <button type="button" id="chat-toggle" class="chat-toggle" aria-expanded="false">
+        Chat
+        <span id="chat-badge" class="chat-badge hidden" aria-hidden="true"></span>
+      </button>
+      <div id="chat-panel" class="chat-panel hidden">
+        <div id="chat-messages" class="chat-messages" role="log"></div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" type="text" maxlength="200" autocomplete="off" placeholder="Message…" aria-label="Chat message" />
+          <button type="submit" class="btn small">Send</button>
+        </form>
+      </div>
+    </aside>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js"></script>
