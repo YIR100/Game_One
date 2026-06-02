@@ -16,9 +16,15 @@ app.use(express.static(join(__dirname, "../public")));
 
 const EMPTY = null;
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const TURN_MS = 15_000;
+const DEFAULT_TURN_LIMIT_MS = 15_000;
+const ALLOWED_TURN_LIMIT_MS = [0, 10_000, 15_000, 30_000];
 const MAX_HISTORY = 20;
 const MAX_CHAT_LEN = 200;
+
+function normalizeTurnLimitMs(v) {
+  const n = Number(v);
+  return ALLOWED_TURN_LIMIT_MS.includes(n) ? n : DEFAULT_TURN_LIMIT_MS;
+}
 
 function randomRoomCode() {
   let code = "";
@@ -86,11 +92,13 @@ function clearTurnTimer(room) {
 function scheduleTurnTimer(room, roomCode) {
   clearTurnTimer(room);
   if (room.status !== "playing") return;
-  room.turnEndsAt = Date.now() + TURN_MS;
+  const limit = room.turnLimitMs ?? DEFAULT_TURN_LIMIT_MS;
+  if (!limit) return;
+  room.turnEndsAt = Date.now() + limit;
   room.turnTimer = setTimeout(() => {
     room.turnTimer = null;
     onTurnTimeout(room, roomCode);
-  }, TURN_MS);
+  }, limit);
 }
 
 function onTurnTimeout(room, roomCode) {
@@ -153,7 +161,7 @@ function roomStateForClient(room, socketId) {
     playersConnected: (room.players.X ? 1 : 0) + (room.players.O ? 1 : 0),
     scores: room.scores ?? newScores(),
     turnEndsAt: room.turnEndsAt ?? null,
-    turnLimitMs: TURN_MS,
+    turnLimitMs: room.turnLimitMs ?? DEFAULT_TURN_LIMIT_MS,
     spectatorCount: room.spectators.size,
     gameHistory: (room.gameHistory ?? []).slice(0, MAX_HISTORY),
     endReason: room.endReason ?? null,
@@ -225,7 +233,15 @@ function leaveSocket(socketId) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("createRoom", (cb) => {
+  socket.on("createRoom", (a, b) => {
+    let opts = {};
+    let cb = b;
+    if (typeof a === "function") {
+      cb = a;
+    } else if (a && typeof a === "object") {
+      opts = a;
+    }
+    const turnLimitMs = normalizeTurnLimitMs(opts.turnLimitMs);
     leaveSocket(socket.id);
     let code = randomRoomCode();
     while (rooms.has(code)) code = randomRoomCode();
@@ -241,6 +257,7 @@ io.on("connection", (socket) => {
       spectators: new Set(),
       gameHistory: [],
       currentPly: [],
+      turnLimitMs,
     };
     rooms.set(code, room);
     socketMeta.set(socket.id, { roomCode: code, role: "X" });
@@ -249,6 +266,15 @@ io.on("connection", (socket) => {
       cb({ ok: true, roomCode: code, rejoinToken: tokenX, seat: "X" });
     }
     socket.emit("gameState", roomStateForClient(room, socket.id));
+  });
+
+  socket.on("setTurnLimit", (rawMs) => {
+    const meta = socketMeta.get(socket.id);
+    if (!meta || meta.role !== "X") return;
+    const room = rooms.get(meta.roomCode);
+    if (!room || room.status !== "waiting") return;
+    room.turnLimitMs = normalizeTurnLimitMs(rawMs);
+    emitRoom(meta.roomCode);
   });
 
   socket.on("joinRoom", (roomCode, cb) => {
@@ -349,7 +375,7 @@ io.on("connection", (socket) => {
     socketMeta.set(socket.id, { roomCode: code, role: "spectator" });
     socket.join(code);
     cb({ ok: true, roomCode: code });
-    socket.emit("gameState", roomStateForClient(room, socket.id));
+    emitRoom(code);
   });
 
   socket.on("leaveRoom", () => {

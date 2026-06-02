@@ -21,6 +21,15 @@
       </header>
 
       <section id="panel-lobby" class="panel">
+        <div class="lobby-field">
+          <label class="lobby-field-label" for="lobby-timer">Turn timer (per move)</label>
+          <select id="lobby-timer" class="lobby-select" aria-label="Turn timer for new rooms">
+            <option value="0">Off</option>
+            <option value="10000">10 seconds</option>
+            <option value="15000" selected>15 seconds</option>
+            <option value="30000">30 seconds</option>
+          </select>
+        </div>
         <div class="actions">
           <button type="button" id="btn-create" class="btn primary">Create room</button>
           <div class="join-row">
@@ -50,6 +59,16 @@
             <button type="button" id="btn-copy" class="btn ghost small">Copy link</button>
           </div>
           <p id="status-line" class="status"></p>
+          <div id="host-timer-row" class="host-timer-row hidden">
+            <label class="lobby-field-label" for="host-timer">Turn timer</label>
+            <select id="host-timer" class="lobby-select" aria-label="Turn timer (host)">
+              <option value="0">Off</option>
+              <option value="10000">10 seconds</option>
+              <option value="15000" selected>15 seconds</option>
+              <option value="30000">30 seconds</option>
+            </select>
+          </div>
+          <p id="timer-policy-hint" class="timer-policy-hint hidden"></p>
           <p id="timer-line" class="timer-line hidden" aria-live="polite"></p>
         </div>
 

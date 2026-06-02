@@ -1,4 +1,11 @@
 const SESSION_KEY = "ttt_session_v1";
+const TIMER_STORAGE_KEY = "ttt_lobby_timer";
+const ALLOWED_LOBBY_TIMERS = [0, 10_000, 15_000, 30_000];
+
+function parseStoredTimer(n) {
+  const v = Number(n);
+  return ALLOWED_LOBBY_TIMERS.includes(v) ? v : 15_000;
+}
 
 const socket = io();
 
@@ -12,6 +19,10 @@ const lobbyError = document.getElementById("lobby-error");
 const rejoinHint = document.getElementById("rejoin-hint");
 const roomCodeDisplay = document.getElementById("room-code-display");
 const statusLine = document.getElementById("status-line");
+const lobbyTimer = document.getElementById("lobby-timer");
+const hostTimerRow = document.getElementById("host-timer-row");
+const hostTimer = document.getElementById("host-timer");
+const timerPolicyHint = document.getElementById("timer-policy-hint");
 const timerLine = document.getElementById("timer-line");
 const boardEl = document.getElementById("board");
 const overlayResult = document.getElementById("overlay-result");
@@ -257,8 +268,6 @@ function updateTimerLine(state) {
   timerLine.classList.remove("hidden");
 }
 
-let TurnMs = 15000;
-
 function maybeReactSounds(state) {
   if (!prevState) {
     prevState = state;
@@ -296,8 +305,6 @@ function maybeReactSounds(state) {
 function applyState(state) {
   if (!state || !state.roomCode) return;
 
-  if (state.turnLimitMs) TurnMs = state.turnLimitMs;
-
   roomCodeDisplay.textContent = state.roomCode;
   applyScores(state);
   scoreActionsRow.classList.toggle("hidden", state.viewerRole === "spectator");
@@ -314,6 +321,26 @@ function applyState(state) {
   );
 
   chatDock.classList.remove("hidden");
+
+  const limitMs = state.turnLimitMs ?? 15_000;
+  const hostCanSetTimer =
+    state.status === "waiting" &&
+    state.yourSymbol === "X" &&
+    state.viewerRole === "player";
+  hostTimerRow.classList.toggle("hidden", !hostCanSetTimer);
+  if (hostCanSetTimer) {
+    const v = String(limitMs);
+    if (hostTimer.value !== v) hostTimer.value = v;
+  }
+
+  if (state.status === "waiting" && state.viewerRole === "spectator") {
+    timerPolicyHint.textContent = limitMs
+      ? `Turn clock for this room: ${limitMs / 1000}s per move.`
+      : "Turn clock is off for this room.";
+    timerPolicyHint.classList.remove("hidden");
+  } else {
+    timerPolicyHint.classList.add("hidden");
+  }
 
   for (let i = 0; i < 9; i++) {
     const cell = cells[i];
@@ -498,11 +525,27 @@ function tryRejoinFromStorage() {
 window.addEventListener("DOMContentLoaded", () => {
   const pre = readRoomFromUrl();
   if (pre) inputCode.value = pre;
+  try {
+    const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+    if (raw !== null) {
+      lobbyTimer.value = String(parseStoredTimer(raw));
+    }
+  } catch (_) {}
   const sess = loadSession();
   if (sess && sess.token && (!pre || pre === sess.roomCode)) {
     rejoinHint.textContent = `Saved seat for room ${sess.roomCode}. Connecting…`;
     rejoinHint.hidden = false;
   }
+});
+
+lobbyTimer.addEventListener("change", () => {
+  try {
+    localStorage.setItem(TIMER_STORAGE_KEY, lobbyTimer.value);
+  } catch (_) {}
+});
+
+hostTimer.addEventListener("change", () => {
+  socket.emit("setTurnLimit", Number(hostTimer.value));
 });
 
 socket.on("connect", () => {
@@ -512,7 +555,8 @@ socket.on("connect", () => {
 btnCreate.addEventListener("click", () => {
   showLobbyError("");
   isSpectatorSession = false;
-  socket.emit("createRoom", (res) => {
+  const turnLimitMs = parseStoredTimer(Number(lobbyTimer.value));
+  socket.emit("createRoom", { turnLimitMs }, (res) => {
     if (!res || !res.ok) {
       showLobbyError("Could not create room.");
       return;
@@ -566,6 +610,7 @@ function spectateWithCode(code) {
     showLobbyError("Enter a room code to spectate.");
     return;
   }
+  clearSession();
   socket.emit("spectateRoom", c, (res) => {
     if (!res || !res.ok) {
       const map = {

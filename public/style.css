@@ -82,6 +82,70 @@ body {
   display: none;
 }
 
+.lobby-field {
+  margin-bottom: 1rem;
+}
+
+.lobby-field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.lobby-select {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lobby-select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.host-timer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.host-timer-row.hidden {
+  display: none;
+}
+
+.host-timer-row .lobby-field-label {
+  margin-bottom: 0;
+}
+
+.host-timer-row .lobby-select {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.timer-policy-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.timer-policy-hint.hidden {
+  display: none;
+}
+
 .actions {
   display: flex;
   flex-direction: column;
